@@ -1,0 +1,59 @@
+# Toggle-WindowsIRSettings.ps1
+Write-Host "=== Windows IR Readiness Toggle Script ===" -ForegroundColor Cyan
+
+function Set-RegistryValue {
+    param (
+        [string]$Path,
+        [string]$Name,
+        [string]$Type,
+        [object]$Value
+    )
+    if (-not (Test-Path $Path)) {
+        New-Item -Path $Path -Force | Out-Null
+    }
+    Set-ItemProperty -Path $Path -Name $Name -Value $Value -Type $Type -Force
+    Write-Host "Set [$Path] -> $Name = $Value" -ForegroundColor Green
+}
+
+# 1. PowerShell Logging
+Set-RegistryValue "HKLM:\Software\Policies\Microsoft\Windows\PowerShell\ScriptBlockLogging" "EnableScriptBlockLogging" "DWord" 1
+Set-RegistryValue "HKLM:\Software\Policies\Microsoft\Windows\PowerShell\ModuleLogging"     "EnableModuleLogging"     "DWord" 1
+Set-RegistryValue "HKLM:\Software\Policies\Microsoft\Windows\PowerShell\Transcription"     "EnableTranscripting"     "DWord" 1
+
+# 2. CommandLine Auditing
+Set-RegistryValue "HKLM:\Software\Microsoft\Windows\CurrentVersion\Policies\System\Audit" "ProcessCreationIncludeCmdLine_Enabled" "DWord" 1
+
+# 3. Prefetch
+Set-RegistryValue "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management\PrefetchParameters" "EnablePrefetcher" "DWord" 3
+
+# 4. WMI Logging
+Set-RegistryValue "HKLM:\SOFTWARE\Microsoft\WBEM\CIMOM" "Logging" "DWord" 2
+Set-RegistryValue "HKLM:\SOFTWARE\Microsoft\WBEM\CIMOM" "Log File Max Size" "DWord" 4000000
+Set-RegistryValue "HKLM:\SOFTWARE\Microsoft\WBEM\PROVIDERS\Logging\ViewProvider" "Level" "DWord" 2
+Set-RegistryValue "HKLM:\SOFTWARE\Microsoft\WBEM\PROVIDERS\Logging\ViewProvider" "MaxFileSize" "DWord" 4000000
+
+# 5. Log Sizes (in bytes or KB as expected by registry)
+Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\EventLog\System"             -Name "MaxSize" -Value 3000000000 -Force
+Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\EventLog\Security"           -Name "MaxSize" -Value 3000000000 -Force
+Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Services\EventLog\Windows PowerShell" -Name "MaxSize" -Value 4000000    -Force
+
+# 6. Task Scheduler Log Size
+wevtutil sl "Microsoft-Windows-TaskScheduler/Operational" /ms:3000000000
+wevtutil sl "Microsoft-Windows-PrintService/Operational" /ms:3000000000
+
+# 7. Enable Logging Channels
+wevtutil sl "Microsoft-Windows-TaskScheduler/Operational" /e:true
+wevtutil sl "Microsoft-Windows-PrintService/Operational" /e:true
+
+# Process Creation
+auditpol /set /subcategory:"Process Creation" /success:disable /failure:enable
+
+# Network
+auditpol /set /subcategory:"Filtering Platform Connection" /success:enable /failure:enable
+
+
+
+Write-Host "`n[+] All values set for IR readiness testing." -ForegroundColor Cyan
+Write-Host "[*] You may now re-run your readiness check script." -ForegroundColor Yellow
+
+

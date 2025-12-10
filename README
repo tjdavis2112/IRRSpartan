@@ -1,0 +1,45 @@
+The following actions would increase the amount of information for activities on your endpoints:
+    • We recommend to enlarge the maximum size on "Event Log" logs, as usually they are quickly getting overwritten with new data, making it impossible to gather information on breaches that occurred more than a few weeks ago.
+    • Use group policies to enable non-default logs: Group Policy is an infrastructure that allows you to specify managed configurations for users and computers through group policy settings and preferences. You can manage group policy settings and preferences in an Active Directory Domain Services (AD DS) environment through the Group Policy Management Console (GPMC).
+
+
+    • TaskScheduler
+        ◦ Track the creation, deletion, modification, and execution of scheduled tasks.
+        ◦ HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\WINEVT\Channels\Microsoft-Windows-TaskScheduler/Operational\Enabled ➝ Set value REG_DWORD 1
+        ◦ Or Event Viewer: Event Viewer ➝ Applications and Services Logs ➝ Microsoft ➝ Windows ➝ "TaskScheduler/Operational"Right click and choose "Enable".
+        ◦ Also: In the same place you should also increase the max log size to be at least 2GB.
+    • PowerShell Logging
+        ◦ Via Group Policy: Computer Configuration ➝ Administrative Templates ➝ Windows Components ➝ Windows PowerShell ➝
+            ▪ Turn on Module Logging
+            ▪ Turn on Powershell Script Block Logging
+            ▪ Turn on PowerShell Transcription
+    • Process Execution Evidence
+        ◦ Group Policy: Computer Configuration ➝ Policies ➝ Windows Settings ➝ Security Settings ➝ Advanced Audit Configuration ➝ Detailed Tracking ➝
+            ▪ Audit Process Creation
+            ▪ Check both Success and Failure.
+        ◦ Enable command line logging
+            ▪ Computer Configuration ➝ Administrative Templates ➝ System ➝ Audit Process Creation ➝ Include command line in process creation events ➝ Enable
+    • Network Activity: 5156 (The Windows Filtering Platform has permitted a connection)
+        ◦ Computer Configuration ➝ Windows Settings ➝ Security Settings ➝ Advanced Audit Policy Configuration ➝ System Audit Policies - Local Group Policy Object ➝ Object Access ➝ Audit Filtering Platform Connection
+            ▪ Check Success (Failure is also possible)
+    • Server Prefetch Logging
+        ◦ HKLM\CurrentControlSet\ControlSessionManager\MemoryManagement\PrefetchParamaters
+    • Misc
+        ◦ WMI-Activity
+            ▪ HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\WBEM\CIMOM\Logging = 2
+            ▪ HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\WBEM\PROVIDERS\Logging\ViewProvider\Level = 2
+        ◦ PrintService
+            ▪ Either by heading to Event Log ➝ Applications and Services Logs ➝ Microsoft ➝ Windows ➝ PrintService ➝ Operational ➝
+            ▪ HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\WINEVT\Channels\Microsoft-Windows-PrintService/Operational\EnabledSet value: REG_DWORD, 1
+        ◦ Log Size
+            ▪ System and Security Log Files Size
+                    ◦ Default = 2mb
+                    ◦ Computer Configuration → Policies → Administrative Templates → Windows Components → Event Log Service -> Security → Specify the maximum log file size (KB) We recommend setting a value of at least 2000000KB (~2GB). The same thing can and should be done also for "System" event log:
+                    ◦ Computer Configuration → Policies → Administrative Templates → Windows Components → Event Log Service → System → Specify the maximum log file size (KB)
+                • Powershell max log size
+                    ◦ default = 15mb
+                    ◦ Computer\HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\EventLog\Windows PowerShell Key: MaxSize Value: 2000000 (~2GB)
+                • WMI-Activity max log size
+                    ◦ default = 1mb
+                    ◦ HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\WBEM\CIMOM\Log File Max Size
+                    ◦ HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\WBEM\PROVIDERS\Logging\ViewProvider\MaxFileSize Set value to be 2000000 (~2GB)
